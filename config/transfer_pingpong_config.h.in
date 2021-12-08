@@ -1,0 +1,3 @@
+// the configured options and settings for Tutorial
+#define transfer_pingpong_VERSION_MAJOR @transfer_pingpong_VERSION_MAJOR@
+#define transfer_pingpong_VERSION_MINOR @transfer_pingpong_VERSION_MINOR@
