@@ -1,4 +1,3 @@
-#include <arpa/inet.h>
 #include "net_utils.h"
 #include "errors.h"
 

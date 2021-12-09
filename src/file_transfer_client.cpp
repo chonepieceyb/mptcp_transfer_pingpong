@@ -14,7 +14,7 @@ FileTransferClient::FileTransferClient(const std::string& dest_ip, const std:: s
     _addr = netutils::parse_sockaddr_in(dest_ip, static_cast<uint16_t>(std::stoul(dest_port)));
 }
 
-void FileTransferClient::start_transfer(uint32_t kbytes) {
+void FileTransferClient::start_transfer(uint64_t kbytes) {
     //transfer
     TCPSocket sock;
     

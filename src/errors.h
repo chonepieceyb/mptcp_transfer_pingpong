@@ -18,7 +18,7 @@ public:
         return strerror(_err);
     }
 
-    int err() {return _err;}
+    int err() const {return _err;}
 private:
     int _err;
 };

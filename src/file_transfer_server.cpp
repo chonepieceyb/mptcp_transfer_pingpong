@@ -1,8 +1,12 @@
 #include "file_transfer_server.h"
 #include "net_utils.h"
 #include <iostream>
+#include <chrono>
 
 namespace net {
+
+using std::chrono::high_resolution_clock;
+using std::chrono::milliseconds;
 
 FileTransferServer::FileTransferServer(const std::string& bind_port, size_t recv_buffer_size, bool enable_mptcp) {
     auto server_addr = netutils::parse_sockaddr_in(static_cast<uint16_t>(std::stoul(bind_port)));
@@ -30,14 +34,20 @@ void FileTransferServer::listen_and_recv() {
     std::cout << "accept: " << inet_ntoa(client_addr.sin_addr) << ':' << ntohs(client_addr.sin_port) << '\n';
     size_t recvd_data = 0;
     //recv data
+    auto begin = high_resolution_clock::now();
     while (true) {
-        auto data = _sock->my_recv();
-        if (data.empty()) {
+        auto recvd_this_time = _sock->simple_recv(client_fd);
+        if (recvd_this_time == 0) {
             break;
         }
-        recvd_data += data.length();
+        recvd_data += recvd_this_time;
     }
-    std::cout << "recvd: " << (recvd_data >> 10) << " KB data\n"; 
+    
+    auto krecvd_data = recvd_data >> 10;
+    auto end = high_resolution_clock::now();
+    double time_interval = std::chrono::duration_cast<milliseconds>(end - begin).count() + 1e-5;
+    std::cout << "recvd: " << krecvd_data << " KB data"\
+        << " time cost(ms): " << time_interval << " rate(kbyte/s): " << static_cast<double>(1000*krecvd_data/time_interval) << std::endl; 
 }
 
 }

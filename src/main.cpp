@@ -2,6 +2,7 @@
 #include <tuple>
 #include "file_transfer_client.h"
 #include "file_transfer_server.h"
+#include "errors.h"
 
 using namespace std;
 using namespace net;
@@ -26,6 +27,7 @@ int main(int argc, char** argv) {
     string dest_addr, port;
     size_t data_size;
     
+    try {
     if (mode == "server" && argc == 4) {
         port = argv[3];
         FileTransferServer server(port, 1400, mptcp); 
@@ -42,5 +44,10 @@ int main(int argc, char** argv) {
     } else {
         cout << "no mode support\n" << endl;
         return -1;
+    }
+    } catch (const LinuxError &e) {
+        cerr << e.err() << " " << e.what() << endl;    
+    } catch (const std::exception &e) {
+        cerr << e.what() << endl;
     }
 }

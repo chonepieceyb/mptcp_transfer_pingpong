@@ -28,14 +28,19 @@ public:
 
     ssize_t my_send(const std::string &data, int flags = 0);  
 
-    std::string my_recv(int flags = 0);
+    std::string my_recv(int fd, int flags = 0);
+
+    ssize_t simple_recv(int fd, int flags = 0) {
+        // just recv don't make copy
+        return _recv(fd, flags);
+    }
 
 protected:
     size_t _recv_buffer_size;
     int _sockfd;
     std::unique_ptr<char[]> _recv_buffer;
     
-    ssize_t _recv(int flags = 0);
+    ssize_t _recv(int fd, int flags = 0);
 };
 
 }

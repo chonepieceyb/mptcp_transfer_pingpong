@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 namespace net {
 
@@ -40,7 +41,7 @@ void TCPSocket::my_listen(int backlog) {
 
 std::pair<sockaddr_in, int> TCPSocket::my_accept() {
     sockaddr_in accepted_addr;
-    socklen_t len = 0;
+    socklen_t len = sizeof(sockaddr_in);
     int fd = accept(_sockfd, (sockaddr*)(&accepted_addr), &len);
     if (fd == -1) {
         throw LinuxError(errno);
@@ -67,13 +68,13 @@ ssize_t TCPSocket::my_send(const std::string &data, int flags) {
     return send_size;
 }
 
-std::string TCPSocket::my_recv(int flags) {
-    auto recvd = _recv(flags);
+std::string TCPSocket::my_recv(int fd, int flags) {
+    auto recvd = _recv(fd, flags);
     return std::string(_recv_buffer.get(), recvd);
 }
 
-ssize_t TCPSocket::_recv(int flags) {
-    auto recv_size = recv(_sockfd, 
+ssize_t TCPSocket::_recv(int fd, int flags) {
+    auto recv_size = recv(fd, 
             static_cast<void*>(_recv_buffer.get()), 
             _recv_buffer_size, flags);
     if (recv_size == -1) {
