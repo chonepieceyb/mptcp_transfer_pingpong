@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     try {
     if (mode == "server" && argc == 4) {
         port = argv[3];
-        FileTransferServer server(port, 60000, mptcp); 
+        FileTransferServer server(port, 1400, mptcp); 
         std::cout << "recvd(KB)\t" << "time(ms)\t" << "rate(KB/s)" << std::endl;
         netutils::TermSignal ts;
         while (ts.ok()) {
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
         dest_addr = argv[3];
         port = argv[4];
         data_size = stoul(argv[5]);
-        FileTransferClient client(dest_addr, port, 60000, mptcp);
+        FileTransferClient client(dest_addr, port, 1400, mptcp);
         auto res = client.start_transfer(data_size);
         std::cout << res.str() << "\n";
         return 0;

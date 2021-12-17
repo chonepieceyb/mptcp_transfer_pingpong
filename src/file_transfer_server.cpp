@@ -30,8 +30,8 @@ RecvRes FileTransferServer::listen_and_recv() {
     sockaddr_in client_addr;
     int client_fd; 
 
-    auto begin = high_resolution_clock::now();
     std::tie(client_addr, client_fd) = _sock->my_accept();
+    auto begin = high_resolution_clock::now();
     //print client info 
     //std::cout << "accept: " << inet_ntoa(client_addr.sin_addr) << ':' << ntohs(client_addr.sin_port) << '\n';
     size_t recvd_data = 0;
