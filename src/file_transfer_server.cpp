@@ -21,7 +21,7 @@ FileTransferServer::FileTransferServer(const std::string& bind_port, size_t recv
     _sock->my_bind(server_addr);
 }
 
-void FileTransferServer::listen_and_recv() {
+RecvRes FileTransferServer::listen_and_recv() {
     //listen 1 
     _sock->my_listen();
         
@@ -42,12 +42,10 @@ void FileTransferServer::listen_and_recv() {
         }
         recvd_data += recvd_this_time;
     }
-    
-    auto krecvd_data = recvd_data >> 10;
     auto end = high_resolution_clock::now();
-    double time_interval = std::chrono::duration_cast<milliseconds>(end - begin).count() + 1e-5;
-    std::cout << "recvd: " << krecvd_data << " KB data"\
-        << " time cost(ms): " << time_interval << " rate(kbyte/s): " << static_cast<double>(1000*krecvd_data/time_interval) << std::endl; 
+    auto krecvd_data = recvd_data >> 10;
+    double time_interval = std::chrono::duration_cast<milliseconds>(end - begin).count();
+    return RecvRes(krecvd_data, time_interval);
 }
 
 }

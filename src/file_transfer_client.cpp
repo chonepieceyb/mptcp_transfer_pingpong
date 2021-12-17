@@ -18,7 +18,7 @@ FileTransferClient::FileTransferClient(const std::string& dest_ip, const std:: s
     _addr = netutils::parse_sockaddr_in(dest_ip, static_cast<uint16_t>(std::stoul(dest_port)));
 }
 
-void FileTransferClient::start_transfer(uint64_t kbytes) {
+SendRes FileTransferClient::start_transfer(uint64_t kbytes) {
     //transfer
     TCPSocket sock;
     
@@ -29,8 +29,6 @@ void FileTransferClient::start_transfer(uint64_t kbytes) {
     int batch = ((kbytes << 10) / _send_buffer_size) + 1;
     uint64_t ksend_data = (batch * _send_buffer_size) >> 10;
 
-    std::cout << "start send: " << ksend_data << " KB data\n";
-
     std::string data(_send_buffer_size, 'a');
 
     auto begin = high_resolution_clock::now();
@@ -38,9 +36,9 @@ void FileTransferClient::start_transfer(uint64_t kbytes) {
          sock.my_send(data);
     }
     auto end = high_resolution_clock::now();
-    double time_interval = std::chrono::duration_cast<milliseconds>(end - begin).count() + 1e-5;
+    double time_interval = std::chrono::duration_cast<milliseconds>(end - begin).count();
 
-    std::cout << "send time cost(ms): " << time_interval << " rate(kbyte/s): " << static_cast<double>(1000*ksend_data/time_interval) << std::endl; 
+    return SendRes(ksend_data, time_interval);
 }
 
 }
