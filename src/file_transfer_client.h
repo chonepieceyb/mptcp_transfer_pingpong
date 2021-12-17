@@ -10,10 +10,10 @@ namespace net {
 
 struct SendRes {
     SendRes(uint64_t ks, double time) : ksended_data(ks), time_ms(time) {
-        rate = static_cast<double>(1000 * ksended_data / (time_ms + 1e-6));
+        rate = static_cast<double>(1000 *1000 * ksended_data / (time_ms + 1e-6));
     }
     uint64_t ksended_data;
-    double time_ms;
+    double time_ms;  //micro seconds
     double rate;   //KB/s
 
     std::string str() {

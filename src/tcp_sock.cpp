@@ -18,11 +18,17 @@ TCPSocket::TCPSocket(size_t rb) : _recv_buffer_size(rb) {
 }
 
 TCPSocket::~TCPSocket() {
+    my_close();
+}
+
+void TCPSocket::my_close() {
+    if (_is_closed) return;
     int res = close(_sockfd);
     if (res == -1) {
         LinuxError e(errno);
         std::cerr << "failed to destory socket: " << e.what() << '\n';
     }
+    _is_closed = true;
 }
 
 void TCPSocket::my_bind(const sockaddr_in &addr) {

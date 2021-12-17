@@ -16,6 +16,8 @@ public:
     
     virtual ~TCPSocket();
 
+    void my_close();
+
     int fd() const {return _sockfd;}
 
     void my_bind(const sockaddr_in &addr);
@@ -39,7 +41,8 @@ protected:
     size_t _recv_buffer_size;
     int _sockfd;
     std::unique_ptr<char[]> _recv_buffer;
-    
+    bool _is_closed {false};
+
     ssize_t _recv(int fd, int flags = 0);
 };
 

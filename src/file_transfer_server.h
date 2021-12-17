@@ -11,7 +11,7 @@ namespace net {
 
 struct RecvRes {
     RecvRes(uint64_t kr, double time) : krecvd_data(kr), time_ms(time) {
-        rate = static_cast<double>(1000 * krecvd_data / (time_ms + 1e-6));
+        rate = static_cast<double>(1000 *1000* krecvd_data / (time_ms + 1e-6));
     }
     uint64_t krecvd_data;
     double time_ms;
