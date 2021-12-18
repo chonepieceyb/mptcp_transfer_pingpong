@@ -7,40 +7,67 @@
 #include <string>
 #include <cstdint>
 #include <memory>
+#include "errors.h"
 
 namespace net {
 
+//目前这个类不支持多线程, 不是线程安全
 class TCPSocket {
 public:
-    explicit TCPSocket(size_t rb = 2048); 
+    explicit TCPSocket(size_t rb); 
+
+    //in this case work as a wrapped 
+    TCPSocket(int fd, size_t rb); 
     
     virtual ~TCPSocket();
 
+    void reset(int fd);
+
+    void tcp_close();
+
     int fd() const {return _sockfd;}
 
-    void my_bind(const sockaddr_in &addr);
+    void tcp_bind(const sockaddr_in &addr);
     
-    void my_listen(int backlog = 1);
+    void tcp_listen(int backlog = 1);
 
-    std::pair<sockaddr_in, int> my_accept();
+    std::pair<sockaddr_in, int> tcp_accept();
 
-    void my_connect(const sockaddr_in &addr);
+    void tcp_connect(const sockaddr_in &addr);
 
-    ssize_t my_send(const std::string &data, int flags = 0);  
+    std::size_t tcp_send(const std::string &data, int flags = 0);  
 
-    std::string my_recv(int fd, int flags = 0);
+    std::string tcp_recv(int flags = 0);
 
-    ssize_t simple_recv(int fd, int flags = 0) {
+    std::size_t tcp_simple_recv(int flags = 0) {
         // just recv don't make copy
-        return _recv(fd, flags);
+        _check();
+        return _recv(flags);
     }
 
 protected:
     size_t _recv_buffer_size;
     int _sockfd;
     std::unique_ptr<char[]> _recv_buffer;
+    bool _is_closed {false};
     
-    ssize_t _recv(int fd, int flags = 0);
+    void _check() {
+        if (_is_closed) {
+            throw Exception("sock has been closed, not allowed");
+        }
+    }
+
+    void _set_fd(int fd) {
+        _sockfd = fd; 
+        if (_sockfd < 0) {
+            //invalid fd
+            _is_closed = true;
+        } else {
+            _is_closed = false;
+        }
+    }
+
+    std::size_t _recv(int flags = 0);
 };
 
 }

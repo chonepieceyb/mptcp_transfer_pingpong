@@ -3,40 +3,43 @@
 
 #include <cstdint>
 #include <string>
+#include <iostream>
 #include <sstream>
+#include <functional>
 #include "tcp_sock.h"
+#include "common.h"
+#include "net_utils.h"
 
 namespace net {
 
-struct SendRes {
-    SendRes(uint64_t ks, double time) : ksended_data(ks), time_ms(time) {
-        rate = static_cast<double>(1000 * ksended_data / (time_ms + 1e-6));
-    }
-    uint64_t ksended_data;
-    double time_ms;
-    double rate;   //KB/s
+struct ClientConfig {
+    bool use_mptcp;
+    TrafficMode mode;
+    uint16_t send_buffer;
+    uint16_t recv_buffer;
+    std::string address;
+    std::uint16_t port;
 
-    std::string str() {
-        if (_str.empty()) {
-            std::ostringstream s;
-            s << ksended_data << " " << time_ms << " " << rate;
-            _str = s.str();
-        }
-        return _str;
+    void show() {
+        std::cout << "use_mptcp: " << use_mptcp << "\n";
+        std::cout << "mode: " << tm_to_string(mode) << "\n";
+        std::cout << "send_buffer(Bytes): " << send_buffer << "\n";
+        std::cout << "recv_buffer(Bytes): " << recv_buffer << "\n";
+        std::cout << "port: " << port << "\n";
+        std::cout << "ip address: " << address << "\n";
     }
-    std::string _str;
 };
 
 class FileTransferClient {
 public: 
-    FileTransferClient(const std::string& dest_ip, const std::string& dest_port, size_t send_buffer_size = 1400, bool enable_mptcp = true);
+    FileTransferClient(ClientConfig config);
 
-    SendRes start_transfer(uint64_t kbytes);  //start transfer kbytes data(fix)
+    TransferRes transfer(std::uint64_t kbytes);  //start transfer kbytes data(fix)
 
-private: 
+private:
     sockaddr_in _addr;
-    size_t _send_buffer_size;
-    int _mptcp_enable;
+    ClientConfig _config;
+    netutils::TrafficFunc _traffic_func;
 };
 
 }

@@ -1,5 +1,5 @@
 #include "tcp_sock.h"
-#include "errors.h"
+
 #include <algorithm>
 #include <iostream>
 #include <unistd.h>
@@ -10,22 +10,45 @@
 namespace net {
 
 TCPSocket::TCPSocket(size_t rb) : _recv_buffer_size(rb) {
-    _sockfd = socket(AF_INET,SOCK_STREAM,0);
-    if (_sockfd == -1) {
+    int fd  = socket(AF_INET,SOCK_STREAM,0);
+    if (fd == -1) {
         throw LinuxError(errno);
     }
+    _set_fd(fd);
+    _recv_buffer = std::unique_ptr<char[]>(new char[_recv_buffer_size]);
+}
+
+TCPSocket::TCPSocket(int fd, size_t rb) : _recv_buffer_size(rb) {
+    _set_fd(fd);
     _recv_buffer = std::unique_ptr<char[]>(new char[_recv_buffer_size]);
 }
 
 TCPSocket::~TCPSocket() {
-    int res = close(_sockfd);
-    if (res == -1) {
-        LinuxError e(errno);
+    try {
+        tcp_close();
+    } catch (std::exception &e) {
         std::cerr << "failed to destory socket: " << e.what() << '\n';
     }
 }
 
-void TCPSocket::my_bind(const sockaddr_in &addr) {
+void TCPSocket::reset(int fd) {
+    tcp_close();
+    _set_fd(fd);
+}
+
+void TCPSocket::tcp_close() {
+    if (_is_closed) {
+        return;
+    }
+    int res = close(_sockfd);
+    if (res == -1) {
+        throw LinuxError(errno);
+    }
+    _is_closed = true;
+}
+
+void TCPSocket::tcp_bind(const sockaddr_in &addr) {
+    _check();
     const sockaddr *saddr = (const sockaddr*)(&addr);
     int res = bind(_sockfd, saddr, sizeof(sockaddr_in));
     if (res == -1) {
@@ -33,13 +56,15 @@ void TCPSocket::my_bind(const sockaddr_in &addr) {
     }
 }
 
-void TCPSocket::my_listen(int backlog) {
+void TCPSocket::tcp_listen(int backlog) {
+    _check();
     if (listen(_sockfd, backlog) == -1) {
         throw LinuxError(errno);
     }
 }
 
-std::pair<sockaddr_in, int> TCPSocket::my_accept() {
+std::pair<sockaddr_in, int> TCPSocket::tcp_accept() {
+    _check();
     sockaddr_in accepted_addr;
     socklen_t len = sizeof(sockaddr_in);
     int fd = accept(_sockfd, (sockaddr*)(&accepted_addr), &len);
@@ -52,7 +77,8 @@ std::pair<sockaddr_in, int> TCPSocket::my_accept() {
     return std::make_pair(accepted_addr, fd);
 }
 
-void TCPSocket::my_connect(const sockaddr_in &addr) {
+void TCPSocket::tcp_connect(const sockaddr_in &addr) {
+    _check();
     const sockaddr *caddr = (const sockaddr*)(&addr);
     int res = connect(_sockfd, caddr, sizeof(sockaddr_in));
     if (res == -1) {
@@ -60,27 +86,29 @@ void TCPSocket::my_connect(const sockaddr_in &addr) {
     }
 }
 
-ssize_t TCPSocket::my_send(const std::string &data, int flags) {
+std::size_t TCPSocket::tcp_send(const std::string &data, int flags) {
+    _check();
     ssize_t send_size = send(_sockfd, data.data(), data.length(), flags);
     if (send_size == -1) {
         throw LinuxError(errno);
     }
-    return send_size;
+    return static_cast<std::size_t>(send_size);
 }
 
-std::string TCPSocket::my_recv(int fd, int flags) {
-    auto recvd = _recv(fd, flags);
+std::string TCPSocket::tcp_recv(int flags) {
+    _check();
+    auto recvd = _recv(flags);
     return std::string(_recv_buffer.get(), recvd);
 }
 
-ssize_t TCPSocket::_recv(int fd, int flags) {
-    auto recv_size = recv(fd, 
+std::size_t TCPSocket::_recv(int flags) {
+    auto recv_size = recv(_sockfd, 
             static_cast<void*>(_recv_buffer.get()), 
             _recv_buffer_size, flags);
     if (recv_size == -1) {
         throw LinuxError(errno);
     }
-    return recv_size;
+    return static_cast<std::size_t>(recv_size);
 }
 
 }
