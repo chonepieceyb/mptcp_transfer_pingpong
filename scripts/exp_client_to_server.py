@@ -7,13 +7,11 @@ from subprocess import Popen
 import time 
 import signal
 #实验设置
-'''
+
 flows = []   # 从 10k 到 320M 10 20 40 80 160 320 ....
 for i in range(15) :
     flows.append(10 * pow(2, i)) 
-'''
 
-flows = [60]
 REPEAT = 10   #每组数据重复做5次
 FILE_DIR = os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUTPUT = os.path.join(FILE_DIR, "result")
@@ -22,14 +20,18 @@ DEFAULT_PING_PONG_PATH = "/home/chonepieceyb/CODING/WorkSpace/mptcp_transfer_pin
 ADDRESS = "223.3.71.76"
 PORT = 60000
 
-def gen_exps(flows_list, repeat, base_path) : 
+def gen_exps(flows_list, repeat) : 
     exps = []
     for flow in flows_list: 
         for index in range(1, repeat + 1): 
             exp_file_name = "%d-%d.pcap"%(flow, index)
-            exps.append(os.path.join(base_path, exp_file_name))
+            exps.append(exp_file_name)
     return exps
 
+def get_flow(exp) :
+    flow = exp.split('-')[0]
+    return int(flow)
+    
 if __name__ == '__main__': 
     #exp [-t,--tcp] [-c] [-o] expname 
     parser = argparse.ArgumentParser(description="exp options")
@@ -54,7 +56,7 @@ if __name__ == '__main__':
         exit(-1)
 
     os.mkdir(exp_dir)
-    exps = gen_exps(flows, args.count, exp_dir)
+    exps = gen_exps(flows, args.count)
     print(exps)
 
     pingpong_client_path = args.input
@@ -67,17 +69,17 @@ if __name__ == '__main__':
     #tcpdump cmd 
     tcpdump_cmd = "sudo tcpdump tcp port %d -w %s"
 
-    for i in range(len(flows)): 
-        flow = flows[i]
-        exp = exps[i]
+    for exp in exps: 
+        flow = get_flow(exp)
+        exp = os.path.join(exp_dir, exp)
         #tcp_dump_proc = Popen(args=tcpdump_cmd %(args.port, exp), shell=True,encoding='utf-8')   #start tcp dump
         tcp_dump_proc = Popen(args=["sudo", "tcpdump", "tcp", "port", str(args.port), "-w", exp],start_new_session=True,encoding='utf-8')   #start tcp dump
-        time.sleep(3) 
+        time.sleep(1) 
         try :
             res = os.system(pingpong_cmd%(pingpong_client_path, tcp_flags, args.address, args.port, flow))
             if res : 
                 raise RuntimeError("pingpong failed, exit : %d"%res)
-            time.sleep(3) 
+            time.sleep(1) 
             os.killpg(tcp_dump_proc.pid, signal.SIGINT) 
         except Exception as e:
             print(e)
