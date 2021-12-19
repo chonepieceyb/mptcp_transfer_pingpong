@@ -8,15 +8,15 @@ import time
 import signal
 #实验设置
 
-flows = []   # 从 10k 到 320M 10 20 40 80 160 320 ....
-for i in range(15) :
+flows = []   # 从 10k 到 5G 10 20 40 80 160 320 ....
+for i in range(20) :
     flows.append(10 * pow(2, i)) 
 
 REPEAT = 10   #每组数据重复做5次
 FILE_DIR = os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUTPUT = os.path.join(FILE_DIR, "result")
 DEFAULT_PING_PONG_PATH = "/home/chonepieceyb/CODING/WorkSpace/mptcp_transfer_pingpong/bin/client"
-
+PKT_THRESDHOLD = 10240  #10M 
 ADDRESS = "223.3.71.76"
 PORT = 60000
 
@@ -67,13 +67,17 @@ if __name__ == '__main__':
     #pingpong sudo client tcpflags -a address -p port block
     pingpong_cmd = "sudo %s %s -v -a %s -p %d %d"
     #tcpdump cmd 
-    tcpdump_cmd = "sudo tcpdump tcp port %d -w %s"
+    tcpdump_normalexpr = "tcp port %d"
+    tcpdump_bigexpr = "tcp port %d and (tcp[tcpflags] & (tcp-syn|tcp-fin) != 0)"
 
     for exp in exps: 
         flow = get_flow(exp)
         exp = os.path.join(exp_dir, exp)
-        #tcp_dump_proc = Popen(args=tcpdump_cmd %(args.port, exp), shell=True,encoding='utf-8')   #start tcp dump
-        tcp_dump_proc = Popen(args=["sudo", "tcpdump", "tcp", "port", str(args.port), "-w", exp],start_new_session=True,encoding='utf-8')   #start tcp dump
+
+        tcpdump_expr = tcpdump_normalexpr
+        if (flow >= PKT_THRESDHOLD) : 
+            tcpdump_expr = tcpdump_bigexpr
+        tcp_dump_proc = Popen(args=["sudo", "tcpdump" , tcpdump_expr%args.port, "-w", exp],start_new_session=True,encoding='utf-8')   #start tcp dump
         time.sleep(1) 
         try :
             res = os.system(pingpong_cmd%(pingpong_client_path, tcp_flags, args.address, args.port, flow))
