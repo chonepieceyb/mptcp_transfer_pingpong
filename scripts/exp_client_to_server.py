@@ -2,14 +2,13 @@
 
 import argparse 
 import os
-import subprocess 
 from subprocess import Popen
 import time 
 import signal
 from common import *
 
 #实验设置
-flows = []   # 从 10k 到 5G 10 20 40 80 160 320 ....
+flows = []   # 从 10k 到 5G 10 20 40 80 160 320 ....  20
 for i in range(20) :
     flows.append(10 * pow(2, i)) 
 
@@ -29,7 +28,7 @@ if __name__ == '__main__':
     #exp [-t,--tcp] [-c] [-o] expname 
     parser = argparse.ArgumentParser(description="exp options")
     parser.add_argument("-t", "--tcp", action="store_true", help="use tcp")
-    parser.add_argument("-c", "--count" , type=int, default= REPEAT, help="repeat")
+    parser.add_argument("-c", "--count" , type=int, default= DEFAULT_REPEAT, help="repeat")
     parser.add_argument("-o","--output", type=str, default = DEFAULT_OUTPUT, help="output path")
     parser.add_argument("-i","--input", type=str, default = DEFAULT_PING_PONG_PATH, help="input client script")
     parser.add_argument("-a","--address", type=str, default = DEFAULT_ADDRESS, help="pear ip address")
@@ -77,7 +76,7 @@ if __name__ == '__main__':
             if res : 
                 raise RuntimeError("pingpong failed, exit : %d"%res)
             time.sleep(1) 
-            os.killpg(tcp_dump_proc.pid, signal.SIGINT) 
         except Exception as e:
             print(e)
+        finally:
             os.killpg(tcp_dump_proc.pid, signal.SIGINT) 
