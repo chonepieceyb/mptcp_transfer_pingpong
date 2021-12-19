@@ -6,19 +6,12 @@ import subprocess
 from subprocess import Popen
 import time 
 import signal
-#实验设置
+from common import *
 
+#实验设置
 flows = []   # 从 10k 到 5G 10 20 40 80 160 320 ....
 for i in range(20) :
     flows.append(10 * pow(2, i)) 
-
-REPEAT = 10   #每组数据重复做5次
-FILE_DIR = os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_OUTPUT = os.path.join(FILE_DIR, "result")
-DEFAULT_PING_PONG_PATH = "/home/chonepieceyb/CODING/WorkSpace/mptcp_transfer_pingpong/bin/client"
-PKT_THRESDHOLD = 10240  #10M 
-ADDRESS = "223.3.71.76"
-PORT = 60000
 
 def gen_exps(flows_list, repeat) : 
     exps = []
@@ -39,8 +32,8 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--count" , type=int, default= REPEAT, help="repeat")
     parser.add_argument("-o","--output", type=str, default = DEFAULT_OUTPUT, help="output path")
     parser.add_argument("-i","--input", type=str, default = DEFAULT_PING_PONG_PATH, help="input client script")
-    parser.add_argument("-a","--address", type=str, default = ADDRESS, help="pear ip address")
-    parser.add_argument("-p", "--port", type=int, default=PORT, help = "server port")
+    parser.add_argument("-a","--address", type=str, default = DEFAULT_ADDRESS, help="pear ip address")
+    parser.add_argument("-p", "--port", type=int, default=DEFAULT_PORT, help = "server port")
 
     parser.add_argument(metavar="exp_name", dest="exp_name", type=str, help="exp name")
     
