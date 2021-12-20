@@ -18,13 +18,19 @@ if __name__ == '__main__':
     parser.add_argument("--xdp", type=str, default = DEFAULT_XDP_SCRIPT, help="input client script")
     parser.add_argument("-a","--address", type=str, default = DEFAULT_ADDRESS, help="pear ip address")
     parser.add_argument("-p", "--port", type=int, default=DEFAULT_PORT, help = "server port")
+    parser.add_argument("-H", "--high_cpu", action="store_true", help = "high cpu load")
     parser.add_argument(metavar="scene", dest="scene", type=str, help="scene name")
 
     args = parser.parse_args()
+    
 
-    #sudo python3 exp.py -a addr -p port -o output expname
-    exp_mptcp_cmd_base = "sudo python3 %s -c %d -a %s -p %d -o %s"%(EXP_SCRIPT, args.count, args.address, args.port, args.output)
-    exp_tcp_cmd_base = "sudo python3 %s -t -c %d -a %s -p %d -o %s"%(EXP_SCRIPT, args.count, args.address, args.port, args.output)
+    high_cpu_flags = ""
+    if (args.high_cpu):
+        high_cpu_flags = "-H"
+
+    #sudo python3 exp.py high_cpu_flag -a addr -p port -o output expname
+    exp_mptcp_cmd_base = "sudo python3 %s %s -c %d -a %s -p %d -o %s"%(EXP_SCRIPT, high_cpu_flags, args.count, args.address, args.port, args.output)
+    exp_tcp_cmd_base = "sudo python3 %s %s -t -c %d -a %s -p %d -o %s"%(EXP_SCRIPT, high_cpu_flags, args.count, args.address, args.port, args.output)
 
     # sudo python xdp_scripts.py -d 
     move_xdp_cmd = "sudo python %s -d --all"%(args.xdp)
