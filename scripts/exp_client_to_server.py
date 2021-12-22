@@ -16,6 +16,7 @@ for i in range (1, 17):
 
 flows.extend([640, 1280, 2560, 5120, 10240, 20480, 40960, 409600, 4096000])
 
+#flows = [10, 20 ,30 , 40]
 def gen_exps(flows_list, repeat) : 
     exps = []
     for flow in flows_list: 
