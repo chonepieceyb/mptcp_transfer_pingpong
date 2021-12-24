@@ -8,8 +8,11 @@
 #include <cstdint>
 #include <csignal> 
 #include <string>
+#include <functional>
 
 namespace net {
+
+class TCPSocket;
 
 namespace netutils {
 
@@ -38,6 +41,15 @@ private:
     }
     volatile bool _keeprunning;
 };
+
+//return <sent_data,recved data>
+using TrafficFunc = std::function<std::pair<uint64_t, uint64_t>(TCPSocket &sock, int batch_size, const std::string *batch_data, const std::string *res_data)>;
+
+TrafficFunc build_up_traffic_func();
+
+TrafficFunc build_down_traffic_func();
+
+TrafficFunc build_bio_traffic_func(bool first_send);
 
 }
 

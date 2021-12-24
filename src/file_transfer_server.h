@@ -4,38 +4,40 @@
 #include <cstdint>
 #include <string> 
 #include <memory>
-#include <sstream> 
+#include <iostream>
 #include "tcp_sock.h"
+#include "common.h"
+#include "net_utils.h"
 
 namespace net {
 
-struct RecvRes {
-    RecvRes(uint64_t kr, double time) : krecvd_data(kr), time_ms(time) {
-        rate = static_cast<double>(1000 *1000* krecvd_data / (time_ms + 1e-6));
-    }
-    uint64_t krecvd_data;
-    double time_ms;
-    double rate;   //KB/s
+struct ServerConfig {
+    bool use_mptcp;
+    TrafficMode mode;
+    uint16_t send_buffer;
+    uint16_t recv_buffer;
+    std::uint16_t port;
 
-    std::string str() {
-        if (_str.empty()) {
-            std::ostringstream s;
-            s << krecvd_data << " " << time_ms << " " << rate;
-            _str = s.str();
-        }
-        return _str;
+    void show() {
+        std::cout << "use_mptcp: " << use_mptcp << "\n";
+        std::cout << "mode: " << tm_to_string(mode) << "\n";
+        std::cout << "send_buffer(Bytes): " << send_buffer << "\n";
+        std::cout << "recv_buffer(Bytes): " << recv_buffer << "\n";
+        std::cout << "port: " << port << "\n";
     }
-    std::string _str;
 };
 
 class FileTransferServer {
 public: 
-    FileTransferServer(const std::string& bind_port, size_t recv_buffer_size = 2048, bool enable_mptcp = true);
+    FileTransferServer(ServerConfig config);
 
-    RecvRes listen_and_recv();  //start transfer kbytes data(fix)
+    void listen_and_transfer(std::uint64_t kbytes);  //start transfer kbytes data(fix)
 
 private: 
     std::unique_ptr<TCPSocket> _sock;
+    netutils::TrafficFunc _traffic_func;
+    ServerConfig _config;
+   
 };
 
 }
