@@ -9,8 +9,8 @@ import signal
 BATCH_SCRIPT_DIR = os.path.join(SCRIPT_DIR, "exp_batch.py")
 OUTPUT_DIR = "/home/ubuntu/exp_resultv2"
 
-stress_batch = [50, 40, 20, 10, 0]
-high_stress_threshold = 20
+stress_batch = [40, 38, 36, 32, 20, 10, 0]
+high_stress_threshold = 30
 
 if __name__ == '__main__' :
     parser = argparse.ArgumentParser(description="batch exp options")
