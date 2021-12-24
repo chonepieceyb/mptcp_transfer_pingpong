@@ -32,12 +32,14 @@ FileTransferClient::FileTransferClient(ClientConfig config) : _config(std::move(
 
 TransferRes FileTransferClient::transfer(std::uint64_t kbytes) {
     int batch = 0;
-    std::string data;
+    std::string batch_data, res_data;
     std::uint64_t sent = 0, recv = 0;
 
     if (_config.mode != TrafficMode::S_TO_C) {
-        batch = ((kbytes << 10) / _config.send_buffer) + 1;
-        data = std::string(_config.send_buffer, 'a');
+        batch = (kbytes << 10) / _config.send_buffer;
+        auto res_size = (kbytes << 10) % _config.send_buffer;
+        batch_data = std::string(_config.send_buffer, 'a');
+        res_data = std::string(res_size, 'a');
     }
 
     //transfer
@@ -48,7 +50,7 @@ TransferRes FileTransferClient::transfer(std::uint64_t kbytes) {
 
     auto begin = high_resolution_clock::now();
     sock.tcp_connect(_addr);
-    std::tie(sent, recv) = _traffic_func(sock, batch, &data);   
+    std::tie(sent, recv) = _traffic_func(sock, batch, &batch_data, &res_data);   
     sock.tcp_close();
     auto end = high_resolution_clock::now();
     double time_interval = std::chrono::duration_cast<microseconds>(end - begin).count();

@@ -40,14 +40,16 @@ FileTransferServer::FileTransferServer(ServerConfig config):_config(std::move(co
 void FileTransferServer::listen_and_transfer(std::uint64_t kbytes) {
     //listen 1 
     int batch = 0;
-    std::string batch_data;
+    std::string batch_data, res_data;
+    std::uint64_t sent = 0, recv = 0;
 
     if (_config.mode == TrafficMode::S_TO_C) {
-        batch = ((kbytes << 10) / _config.send_buffer) + 1;
+        batch = (kbytes << 10) / _config.send_buffer;
+        auto res_size = (kbytes << 10) % _config.send_buffer;
         batch_data = std::string(_config.send_buffer, 'a');
+        res_data = std::string(res_size, 'a');
     }
 
-    std::uint64_t sent = 0, recv = 0;
     TCPSocket client_sock(-1, _config.recv_buffer);
 
     netutils::TermSignal ts;
@@ -61,7 +63,7 @@ void FileTransferServer::listen_and_transfer(std::uint64_t kbytes) {
         client_sock.reset(client_fd);  //wapper
         //print client info 
         //std::cout << "accept: " << inet_ntoa(client_addr.sin_addr) << ':' << ntohs(client_addr.sin_port) << '\n';
-        std::tie(sent, recv) = _traffic_func(client_sock, batch, &batch_data);   
+        std::tie(sent, recv) = _traffic_func(client_sock, batch, &batch_data, &res_data);   
         client_sock.tcp_close();
     }
 }

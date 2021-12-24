@@ -43,7 +43,7 @@ private:
 };
 
 //return <sent_data,recved data>
-using TrafficFunc = std::function<std::pair<uint64_t, uint64_t>(TCPSocket &sock, int batch_size, const std::string *batch_data)>;
+using TrafficFunc = std::function<std::pair<uint64_t, uint64_t>(TCPSocket &sock, int batch_size, const std::string *batch_data, const std::string *res_data)>;
 
 TrafficFunc build_up_traffic_func();
 

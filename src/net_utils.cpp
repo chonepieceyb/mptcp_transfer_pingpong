@@ -47,10 +47,16 @@ void set_tcp_reuse_addr(int fd, int reuse) {
 
 TrafficFunc build_up_traffic_func() {
     //up traffic send data
-    auto up_func = [](TCPSocket &sock, int batch_size, const std::string *batch_data)->std::pair<uint64_t, uint64_t> {
+    auto up_func = [](TCPSocket &sock, int batch_size, const std::string *batch_data, const std::string *res_data)->std::pair<uint64_t, uint64_t> {
+        if (batch_data == nullptr || res_data == nullptr) {
+            throw Exception("batch data or res data is null in up traffic func");
+        }
         uint64_t sent = 0;
         for (int i = 0; i < batch_size; i++) {
              sent += sock.tcp_send(*batch_data);
+        }
+        if (!res_data->empty()) {
+            sent += sock.tcp_send(*res_data);
         }
         return std::make_pair(sent, 0);
     };
@@ -59,7 +65,7 @@ TrafficFunc build_up_traffic_func() {
 
 TrafficFunc build_down_traffic_func() {
     //down traffic recv data
-    auto down_func = [](TCPSocket &sock, int batch_size, const std::string *batch_data)->std::pair<uint64_t, uint64_t> {
+    auto down_func = [](TCPSocket &sock, int batch_size, const std::string *batch_data, const std::string *res_data)->std::pair<uint64_t, uint64_t> {
         uint64_t recv = 0;
         while (true) {
             auto recv_data = sock.tcp_recv();
@@ -79,16 +85,25 @@ TrafficFunc build_bio_traffic_func(bool first_send) {
     TrafficFunc bio_func;
     if (first_send) {
 
-    bio_func = [](TCPSocket &sock, int batch_size, const std::string *batch_data)->std::pair<uint64_t, uint64_t> {
+    bio_func = [](TCPSocket &sock, int batch_size, const std::string *batch_data, const std::string *res_data)->std::pair<uint64_t, uint64_t> {
+        if (batch_data == nullptr || res_data == nullptr) {
+            throw Exception("batch data or res data is null in bio traffic func");
+        }
         uint64_t recv = 0;
         uint64_t sent = 0;
         int index = 0;
+        bool last_sent = false;
         while (true) {
             //ping 
             if (index++ < batch_size) {
                 sent += sock.tcp_send(*batch_data);
+            } else if (!last_sent) {
+                if (!res_data->empty()) {
+                    sent += sock.tcp_send(*res_data);
+                }
+                last_sent = true;
             } else {
-                //end of send 
+                 //end of send 
                 break;
             }
 
@@ -103,7 +118,7 @@ TrafficFunc build_bio_traffic_func(bool first_send) {
 
     } else {
 
-    bio_func = [](TCPSocket &sock, int batch_size, const std::string *batch_data)->std::pair<uint64_t, uint64_t> {
+    bio_func = [](TCPSocket &sock, int batch_size, const std::string *batch_data, const std::string *res_data)->std::pair<uint64_t, uint64_t> {
         uint64_t recv = 0;
         uint64_t sent = 0;
         while (true) {
