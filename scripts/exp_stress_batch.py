@@ -10,6 +10,8 @@ BATCH_SCRIPT_DIR = os.path.join(SCRIPT_DIR, "exp_batch.py")
 OUTPUT_DIR = "/home/ubuntu/exp_resultv2"
 
 stress_batch = [40, 38, 36, 32, 20, 10, 0]
+#stress_batch = [0, 1]
+
 high_stress_threshold = 30
 
 if __name__ == '__main__' :
@@ -17,10 +19,24 @@ if __name__ == '__main__' :
     parser.add_argument("-c", "--count" , type=int, default= DEFAULT_REPEAT, help="repeat")
     parser.add_argument("-a","--address", type=str, default = DEFAULT_ADDRESS, help="pear ip address")
     parser.add_argument("-p", "--port", type=int, default=DEFAULT_PORT, help = "server port")
+    parser.add_argument("-o", "--output", type=str, default=OUTPUT_DIR, help = "output_dir")
+
+    parser.add_argument("-n", "--normal_mptcp", action="store_true", help = "run normal mptcp")
+    parser.add_argument("-t", "--tcp", action="store_true", help = "run tcp")
+    parser.add_argument("-x", "--mptcp_xdp", action="store_true", help = "run mptcp xdp")
     args = parser.parse_args()
     
-    #sudo python batch_exp.py -a address -p port -c count -o output_dir high_flg scene_name
-    bacth_script_cmd_base = "sudo python %s -a %s -p %d -c %d -o %s"%(BATCH_SCRIPT_DIR, args.address, args.port, args.count, OUTPUT_DIR)
+    assert(args.normal_mptcp or args.tcp or args.mptcp_xdp)
+    mode_flags = "-"
+    if args.tcp : 
+        mode_flags += 't'
+    if args.normal_mptcp:
+        mode_flags += 'n'
+    if args.mptcp_xdp: 
+        mode_flags += 'x'
+
+    #sudo python batch_exp.py mode_flags -a address -p port -c count -o output_dir high_flg scene_name
+    bacth_script_cmd_base = "sudo python %s %s -a %s -p %d -c %d -o %s"%(BATCH_SCRIPT_DIR, mode_flags, args.address, args.port, args.count, args.output)
     high_flag = ""
 
     clean_cmd = "sudo kill -9 $(pidof stress)"
