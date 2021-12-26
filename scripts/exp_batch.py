@@ -10,7 +10,7 @@ from common import *
 
 DEFAULT_XDP_SCRIPT = os.path.join(XDP_PROJECT_DIR, "src_py", "mptcp_xdp_loader.py")
 BATCH_DEFAULT_OUTPUT = DEFAULT_OUTPUT
-EXP_SCRIPT = os.path.join(SCRIPT_DIR, "exp_client_to_server.py")  #之后直接改这个值就行
+EXP_SCRIPT = os.path.join(SCRIPT_DIR, "exp_client_to_server2.py")  #之后直接改这个值就行
 
 if __name__ == '__main__': 
     parser = argparse.ArgumentParser(description="batch exp options")
