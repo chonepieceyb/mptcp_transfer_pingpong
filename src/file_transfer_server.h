@@ -5,39 +5,35 @@
 #include <string> 
 #include <memory>
 #include <iostream>
-#include "tcp_sock.h"
-#include "common.h"
-#include "net_utils.h"
+#include "in_sock.h"
 
 namespace net {
 
+using namespace sock;
+
 struct ServerConfig {
     bool use_mptcp;
-    TrafficMode mode;
-    uint16_t send_buffer;
     uint16_t recv_buffer;
     std::uint16_t port;
+    int version;
 
     void show() {
         std::cout << "use_mptcp: " << use_mptcp << "\n";
-        std::cout << "mode: " << tm_to_string(mode) << "\n";
-        std::cout << "send_buffer(Bytes): " << send_buffer << "\n";
         std::cout << "recv_buffer(Bytes): " << recv_buffer << "\n";
         std::cout << "port: " << port << "\n";
+        std::cout << "version: " << version << "\n";
     }
 };
 
 class FileTransferServer {
 public: 
-    FileTransferServer(ServerConfig config);
+    FileTransferServer(const ServerConfig &config);
 
-    void listen_and_transfer(std::uint64_t kbytes);  //start transfer kbytes data(fix)
+    void listen_and_transfer();  //start transfer kbytes data(fix)
 
 private: 
-    std::unique_ptr<TCPSocket> _sock;
-    netutils::TrafficFunc _traffic_func;
+    std::unique_ptr<TCPSockIn> _sock;
     ServerConfig _config;
-   
 };
 
 }

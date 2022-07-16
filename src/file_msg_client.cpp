@@ -1,4 +1,4 @@
-#include "file_transfer_client.h"
+#include "file_msg_client.h"
 #include <chrono>
 #include "utils.h"
 
@@ -7,22 +7,19 @@ namespace net {
 using std::chrono::high_resolution_clock;
 using std::chrono::microseconds;
 
-FileTransferClient::FileTransferClient(const ClientConfig &config) : _config(config) {
+FileMsgClient::FileMsgClient(const MsgClientConfig &config) : _config(config) {
 }
     
-TransferRes FileTransferClient::transfer(std::uint64_t kbytes) {
-    //create a new socket transfer kbytes, and close socket, each time a transfer is called , a new socket is created
-    int batch = 0;
-    std::string batch_data, res_data;
-
-    batch = (kbytes << 10) / _config.send_buffer;
-    auto res_size = (kbytes << 10) % _config.send_buffer;
-    batch_data = std::string(_config.send_buffer, 'a');
-    res_data = std::string(res_size, 'a');
+MsgTransferRes FileMsgClient::transfer(std::uint32_t msg_num) {
+    //example 
     
+    //define mesg 
+    std::string msg (1428, 'a');
+
     std::chrono::time_point<std::chrono::high_resolution_clock>  begin;     
-    uint64_t sent = 0;
     { 
+/*-----------create mptcp socket begin ---------*/
+        //create mptcp socket don't modify 
         std::unique_ptr<TCPSockIn> client_sock;
         if (_config.use_mptcp) {
             //mptcp 
@@ -42,21 +39,24 @@ TransferRes FileTransferClient::transfer(std::uint64_t kbytes) {
             //tcp
         }   
 
-        //
+/*-----------create mptcp socket end ---------*/
+        
+
         begin = high_resolution_clock::now();
         client_sock->connect(_config.address, _config.port);
     
-        //transfer data 
-        for (int i = 0; i < batch; i++) {
-            sent += client_sock->send(batch_data.data(), batch_data.length(), 0);
+
+/*-----------transfer data begin (modify this block )---------*/
+        
+        for (int i = 0; i < msg_num; i++) {
+            client_sock->send(msg.data(), msg.length(), 0);
         }
-        if (!res_data.empty()) {
-            sent += client_sock->send(res_data.data(), res_data.length(), 0);
-        }
+/*-----------transfer data end (modify this block )---------*/
+        
     }
     auto end = high_resolution_clock::now();
     double time_interval = std::chrono::duration_cast<microseconds>(end - begin).count();
-    return TransferRes(sent >> 10, 0, time_interval);
+    return MsgTransferRes(msg_num, time_interval);
 }
 
 }

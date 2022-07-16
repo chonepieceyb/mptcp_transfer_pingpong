@@ -11,7 +11,7 @@ namespace net {
 
 using namespace sock;
 
-struct ClientConfig {
+struct MsgClientConfig {
     bool use_mptcp;
     uint16_t send_buffer;
     std::string address;
@@ -27,14 +27,14 @@ struct ClientConfig {
     }
 };
 
-class FileTransferClient {
+class FileMsgClient {
 public: 
-    FileTransferClient(const ClientConfig &config);
+    FileMsgClient(const MsgClientConfig &config);
 
-    TransferRes transfer(std::uint64_t kbytes);  //start transfer kbytes data(fix)
+    MsgTransferRes transfer(std::uint32_t msg_num);  //start transfer kbytes data(fix)
 
 private:
-    ClientConfig _config;
+    MsgClientConfig _config;
 };
 
 }

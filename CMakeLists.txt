@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(transfer_pingpong VERSION 1.0)
+project(transfer_pingpong VERSION 2.0)
 
 set(EXECUTABLE_OUTPUT_PATH "${PROJECT_SOURCE_DIR}/bin")
 set(CONFIG_DIR "${PROJECT_SOURCE_DIR}/config")
@@ -14,7 +14,7 @@ find_library(BOOST_LIB NAMES boost_program_options HINTS "${BOOST_DIR}/lib" REQU
 aux_source_directory("${PROJECT_SOURCE_DIR}/src" SRC_LIST)
 
 #get all target files
-set(TARGET_LIST "${PROJECT_SOURCE_DIR}/src/client.cxx" "${PROJECT_SOURCE_DIR}/src/server.cxx")
+set(TARGET_LIST "${PROJECT_SOURCE_DIR}/src/client.cxx"  "${PROJECT_SOURCE_DIR}/src/msg_client.cxx" "${PROJECT_SOURCE_DIR}/src/server.cxx" )
 list(REMOVE_ITEM SRC_LIST ${TARGET_LIST})
 
 message("${SRC_LIST}")

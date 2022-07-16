@@ -1,41 +1,30 @@
 #ifndef MPTCP_ERROR_H
 #define MPTCP_ERROR_H
 
-#include <string.h>
-#include <exception>
-#include <errno.h>
-#include <string>
+#include<cstring>
+#include<cerrno> 
+#include<exception> 
+#include<system_error>
+#include<string>
 
-namespace net {
+namespace errors {
 
-class LinuxError : public std::exception {
-public:
-    explicit LinuxError(int err) : _err(err) {}
-
-    virtual ~LinuxError() = default;
-
-    virtual const char* what() const noexcept override {
-        return strerror(_err);
-    }
-
-    int err() const {return _err;}
-private:
-    int _err;
-};
-
+//project based exception
 class Exception : public std::exception {
-public:
-    explicit Exception(const std::string &err) : _err(err) {}
-
-    virtual ~Exception() = default;
-
-    virtual const char* what() const noexcept override {
-        return _err.data();
-    }
-
-private:
-    std::string _err;
+    using std::exception::exception;
 };
+
+class KeyboardInterrupt : public Exception {
+    using Exception::Exception;
+};
+
+inline std::system_error make_system_error(int e = errno) {
+    return std::system_error(e,std::system_category());
+}
+
+inline std::system_error make_system_error(const char* what_msg, int e = errno) {
+    return std::system_error(e,std::system_category(), what_msg);
+}
 
 }
 #endif

@@ -7,7 +7,7 @@
 #include <string> 
 #include <vector>
 #include <cstdint>
-#include "file_transfer_client.h"
+#include "file_msg_client.h"
 #include "errors.h"
 #include "common.h"
 
@@ -31,10 +31,12 @@ int main(int argc, char** argv) {
         ("address,a", po::value<std::string>()->default_value("127.0.0.1"), "server's ip address")
         ("config", "show config info")
         ("verbose,v", "print transfer result to stdout")
-        ("blocks", po::value<std::vector<std::uint64_t>>(), "position arguments, blocks to send")
+        ("msg_num", po::value<std::uint32_t>(), "position arguments, msg number per socket")
+        
+        ("socket_num", po::value<std::uint32_t>(), "position arguments, socket number")
         ;
     po::positional_options_description pd;
-    pd.add("blocks", -1);
+    pd.add("msg_num", 1).add("socket_num", 1);
     
     po::variables_map vm;
     try {
@@ -53,8 +55,9 @@ int main(int argc, char** argv) {
     }
 
     std::vector<std::uint64_t> blocks;
-    net::ClientConfig config;
+    net::MsgClientConfig config;
     bool verbose = false;
+    std::uint32_t msg_num, socket_num;
     try {
         config.use_mptcp = true; 
         if (vm.count("tcp")) config.use_mptcp = false;
@@ -66,11 +69,8 @@ int main(int argc, char** argv) {
         }
         if (!vm.count("address")) throw std::runtime_error("address is needed");
         config.address = vm["address"].as<std::string>();
-        if (vm.count("blocks")) {
-            blocks = vm["blocks"].as<std::vector<std::uint64_t>>();
-        } else {
-            throw std::runtime_error("block is need");
-        }
+        msg_num = vm["msg_num"].as<std::uint32_t>();
+        socket_num = vm["socket_num"].as<std::uint32_t>();
     } catch (std::exception &e) {
         std::cerr << e.what() << "\n";
         return -1;
@@ -79,17 +79,14 @@ int main(int argc, char** argv) {
     if (vm.count("config")) {
         //show configs 
         config.show();
-        std::cout << "blocks: ";
-        for (auto b : blocks) {
-            std::cout << b << " ";
-        }
-        std::cout << '\n';
+        std::cout << "msg_num: " << msg_num << "\n";
+        std::cout << "socket_num: " << socket_num << "\n";
     }
     
     try {
-        net::FileTransferClient client(config);
-        for (auto block : blocks) {
-            auto res = client.transfer(block);
+        net::FileMsgClient client(config);
+        for (int i = 0; i < socket_num; i++) {
+            auto res = client.transfer(msg_num);
             if (verbose)
                 std::cout << res.str() << "\n";
         }
