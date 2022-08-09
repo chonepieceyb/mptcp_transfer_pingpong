@@ -20,6 +20,8 @@ TransferRes FileTransferClient::transfer(std::uint64_t kbytes) {
     batch_data = std::string(_config.send_buffer, 'a');
     res_data = std::string(res_size, 'a');
     
+    //std::cout << "batch: " << batch << "\n";
+    //std::cout << "res_size: " << res_size << "\n";
     std::chrono::time_point<std::chrono::high_resolution_clock>  begin;     
     uint64_t sent = 0;
     { 
@@ -41,6 +43,9 @@ TransferRes FileTransferClient::transfer(std::uint64_t kbytes) {
             }
             //tcp
         }   
+        if (!_config.bind_address.empty()) {
+            client_sock->bind(_config.bind_address, 0);
+        }
 
         //
         begin = high_resolution_clock::now();
@@ -49,13 +54,18 @@ TransferRes FileTransferClient::transfer(std::uint64_t kbytes) {
         //transfer data 
         for (int i = 0; i < batch; i++) {
             sent += client_sock->send(batch_data.data(), batch_data.length(), 0);
+            //std::cout << "send " << sent << "\n";
         }
         if (!res_data.empty()) {
+            //std::cout << "transfer res " <<res_data << "\n";
             sent += client_sock->send(res_data.data(), res_data.length(), 0);
+            //std::cout << "res send " << sent << "\n";
         }
     }
     auto end = high_resolution_clock::now();
     double time_interval = std::chrono::duration_cast<microseconds>(end - begin).count();
+
+    //std::cout << "end transfer " << "\n";
     return TransferRes(sent >> 10, 0, time_interval);
 }
 

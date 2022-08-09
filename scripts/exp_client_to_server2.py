@@ -7,11 +7,8 @@ from common import *
 #实验设置
 flows = [10]
 
-# 20 - 320K 
-for i in range (1, 17): 
-    flows.append(i * 20)
 
-flows.extend([640, 1280, 2560, 5120, 10240, 20480, 40960, 409600, 4096000])
+flows.extend([100,150,200,250,300,350,400,450,500,550,600])
 
 #flows = [10, 20 ,30 , 40]
 def gen_exps(flows_list, repeat) : 
@@ -60,7 +57,7 @@ if __name__ == '__main__':
         tcp_flags = "-t"
 
     #pingpong sudo client tcpflags -v -b send_buffer -a address -p port block
-    pingpong_cmd = "sudo %s %s -v -b %d -a %s -p %d %d"
+    pingpong_cmd = "%s %s -i 172.16.12.128 -V 0 -v -b %d -a %s -p %d %d"
     send_buffer = DEFAULT_SEND_BUFFER
 
     for exp in exps: 

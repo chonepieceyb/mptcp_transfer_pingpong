@@ -29,6 +29,8 @@ int main(int argc, char** argv) {
         ("version,V", po::value<int>()->default_value(1), "mptcp version")
         ("port,p", po::value<std::uint16_t>()->default_value(net::DEFAULT_PORT), "server's port")
         ("address,a", po::value<std::string>()->default_value("127.0.0.1"), "server's ip address")
+        ("bind_address,i", po::value<std::string>()->default_value(""), "bind address to client")
+
         ("config", "show config info")
         ("verbose,v", "print transfer result to stdout")
         ("blocks", po::value<std::vector<std::uint64_t>>(), "position arguments, blocks to send")
@@ -66,6 +68,7 @@ int main(int argc, char** argv) {
         }
         if (!vm.count("address")) throw std::runtime_error("address is needed");
         config.address = vm["address"].as<std::string>();
+        config.bind_address = vm["bind_address"].as<std::string>();
         if (vm.count("blocks")) {
             blocks = vm["blocks"].as<std::vector<std::uint64_t>>();
         } else {

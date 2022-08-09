@@ -167,6 +167,7 @@ std::size_t SocketView<AddrType>::send(
         const char *buf, std::size_t len, int flags) const {
     ssize_t send_size = ::send(_fd, buf, len, flags);
     if (send_size < 0) {
+        std::cout << "send error! \n"; 
         throw errors::make_system_error("sock send error!");
     }
     return static_cast<std::size_t>(send_size);

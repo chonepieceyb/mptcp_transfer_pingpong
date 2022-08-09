@@ -15,6 +15,7 @@ struct ClientConfig {
     bool use_mptcp;
     uint16_t send_buffer;
     std::string address;
+    std::string bind_address;
     std::uint16_t port;
     int version;
 
@@ -23,6 +24,7 @@ struct ClientConfig {
         std::cout << "send_buffer(Bytes): " << send_buffer << "\n";
         std::cout << "port: " << port << "\n";
         std::cout << "ip address: " << address << "\n";
+        std::cout << "bind address: " << bind_address << "\n";
         std::cout << "mptcp version: " << version << "\n";
     }
 };
