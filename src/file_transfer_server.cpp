@@ -42,7 +42,7 @@ FileTransferServer::FileTransferServer(const ServerConfig &config):_config(confi
     _sock->set_reuse_addr(1);
     
     //bind
-    _sock->bind("", _config.port);
+    _sock->bind(_config.bind_address, _config.port);
 }
 
 void FileTransferServer::listen_and_transfer() {

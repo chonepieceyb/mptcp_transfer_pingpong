@@ -28,6 +28,8 @@ int main(int argc, char** argv) {
         ("recv_buffer,B", po::value<std::uint16_t>()->default_value(net::RECV_BUFFER), "recv buffer size")
         ("version,V", po::value<int>()->default_value(1), "mptcp_version")
         ("port,p", po::value<std::uint16_t>()->default_value(net::DEFAULT_PORT), "server's port")
+        ("bind_address,i", po::value<std::string>()->default_value(""), "bind address to server")
+
         ("config", "show config info")
         ;
     
@@ -54,6 +56,7 @@ int main(int argc, char** argv) {
         config.recv_buffer = vm["recv_buffer"].as<std::uint16_t>();
         config.port = vm["port"].as<std::uint16_t>();
         config.version = vm["version"].as<int>();
+        config.bind_address = vm["bind_address"].as<std::string>();
     } catch (std::exception &e) {
         std::cerr << e.what() << "\n";
         return -1;

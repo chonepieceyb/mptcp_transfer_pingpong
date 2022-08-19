@@ -14,14 +14,17 @@ using namespace sock;
 struct ServerConfig {
     bool use_mptcp;
     uint16_t recv_buffer;
+    std::string bind_address;
     std::uint16_t port;
     int version;
-
+    
     void show() {
         std::cout << "use_mptcp: " << use_mptcp << "\n";
         std::cout << "recv_buffer(Bytes): " << recv_buffer << "\n";
         std::cout << "port: " << port << "\n";
         std::cout << "version: " << version << "\n";
+        std::cout << "bind address: " << bind_address << "\n";
+        std::cout << "mptcp version: " << version << "\n";
     }
 };
 
