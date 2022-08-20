@@ -48,7 +48,7 @@ MsgTransferRes FileMsgClient::transfer(std::uint32_t msg_num) {
 
 /*-----------transfer data begin (modify this block )---------*/
         
-        for (int i = 0; i < msg_num; i++) {
+        for (std::uint32_t i = 0; i < msg_num; i++) {
             client_sock->send(msg.data(), msg.length(), 0);
         }
 /*-----------transfer data end (modify this block )---------*/
