@@ -13,6 +13,7 @@
 #include <thread>
 #include <memory>
 #include <fstream>
+#include <tuple>
 #include "in_sock.h"
 #include "errors.h"
 #include "common.h"
@@ -26,6 +27,7 @@ struct ECFExpClientConfig {
     std::string address;
     std::string bind_address;
     std::uint16_t port;
+    std::vector<std::string> scripts;
     int version;
 
     void show() {
@@ -38,7 +40,15 @@ struct ECFExpClientConfig {
     }
 };
 
-void read_blocks(const std::string &file_path, std::vector<std::uint64_t> &blocks, std::vector<std::uint32_t> &intervals) {
+struct FileBlock {
+    FileBlock(std::uint64_t b, std::uint32_t i, int s_b, int s_a):block_size(b), interval(i), script_before(s_b), script_after(s_a) {}
+    std::uint64_t block_size;
+    std::uint32_t interval;
+    int script_before;
+    int script_after;
+};
+
+void read_blocks(const std::string &file_path, std::vector<FileBlock> &blocks) {
     std::ifstream ifile;
     ifile.open(file_path, std::ios::in);
     if (!ifile.is_open()) {
@@ -46,10 +56,10 @@ void read_blocks(const std::string &file_path, std::vector<std::uint64_t> &block
     }
     uint64_t block;
     uint32_t interval;
+    int use_before, use_after;
     //while(ifile.peek() != std::char_traits<char>::eof()) {
-    while(ifile >> block >> interval) {
-        blocks.push_back(block);
-        intervals.push_back(interval);
+    while(ifile >> block >> interval >> use_before >> use_after) {
+        blocks.emplace_back(block, interval, use_before, use_after);
     }
     ifile.close();
 }
@@ -71,7 +81,7 @@ double transfer_block(TCPSockIn *sock, std::uint64_t block_size, char *buf, std:
     return std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 }
 
-void transfer(const ECFExpClientConfig &config, const std::vector<std::uint64_t> &blocks, const std::vector<std::uint32_t> &intervals) {
+void transfer(const ECFExpClientConfig &config, const std::vector<FileBlock> &blocks) {
     std::unique_ptr<TCPSockIn> client_sock;
     if (config.use_mptcp) {
         //mptcp 
@@ -99,16 +109,21 @@ void transfer(const ECFExpClientConfig &config, const std::vector<std::uint64_t>
     //transfer data 
     double all_time = 0;
     auto buf = utils::create_buffer(config.send_buffer, true);
-    for (auto i = 0; i < blocks.size(); i++) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(intervals[i]));
-        auto duration = transfer_block(client_sock.get(), blocks[i], reinterpret_cast<char*>(buf.get()), config.send_buffer);
-        std::cout << blocks[i] << " " << duration << "\n";
+    for (auto &file_block : blocks) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(file_block.interval));
+        if (file_block.script_before >= 0) {
+            assert(utils::run_cmd(config.scripts.at(file_block.script_before)).first && "before script failed");
+        }
+        auto duration = transfer_block(client_sock.get(), file_block.block_size, reinterpret_cast<char*>(buf.get()), config.send_buffer);
+        std::cout << file_block.block_size << " " << duration << "\n";
         all_time += duration;
+        if (file_block.script_after >= 0) {
+            assert(utils::run_cmd(config.scripts.at(file_block.script_after)).first && "after script failed");
+        }
+
     }
     std::cout << "all: " << all_time << "\n";
 }
-
-
 
 namespace po = boost::program_options;
 
@@ -128,11 +143,10 @@ int main(int argc, char** argv) {
         ("port,p", po::value<std::uint16_t>()->default_value(net::DEFAULT_PORT), "server's port")
         ("address,a", po::value<std::string>()->default_value("127.0.0.1"), "server's ip address")
         ("bind_address,i", po::value<std::string>()->default_value(""), "bind address to client")
-
+        
         ("config", "show config info")
-        ("blocks", po::value<std::vector<std::uint64_t>>()->multitoken(), " blocks to send")
-        ("intervals", po::value<std::vector<std::uint32_t>>()->multitoken(), "interval before each block to send")
-        ("file,f", po::value<std::string>(), "block's file")
+        ("file,f", po::value<std::string>(), "blocks file")
+        ("scripts", po::value<std::vector<std::string>>()->multitoken(), "scripts")
         ;
        
     po::variables_map vm;
@@ -151,8 +165,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    std::vector<std::uint64_t> blocks;
-    std::vector<std::uint32_t> intervals;
+    std::vector<FileBlock> blocks;
     ECFExpClientConfig config;
     try {
         config.use_mptcp = true; 
@@ -162,15 +175,11 @@ int main(int argc, char** argv) {
         config.version = vm["version"].as<int>();
         config.address = vm["address"].as<std::string>();
         config.bind_address = vm["bind_address"].as<std::string>();
-
-        assert(((vm.count("blocks") && vm.count("intervals")) || vm.count("file")) && "must provide both blocks and intervals or provide file");
-        if (vm.count("file")) {
-            read_blocks(vm["file"].as<std::string>(), blocks, intervals);
-        } else {
-            blocks = vm["blocks"].as<std::vector<std::uint64_t>>();
-            intervals = vm["intervals"].as<std::vector<std::uint32_t>>();       
-            assert((blocks.size() == intervals.size()) && "block's size must equal intervals's size");
+        if (vm.count("scripts")) {
+            config.scripts = vm["scripts"].as<std::vector<std::string> >();
         }
+        assert(vm.count("file") && "must provide block file");
+        read_blocks(vm["file"].as<std::string>(), blocks);
     } catch (std::exception &e) {
         std::cerr << e.what() << "\n";
         return -1;
@@ -179,15 +188,15 @@ int main(int argc, char** argv) {
     if (vm.count("config")) {
         //show configs 
         config.show();
-        std::cout << "interval-block: ";
-        for (auto i = 0; i < blocks.size(); i++) {
-            std::cout << intervals[i] << "-" << "\n";
+        std::cout << "blocks: ";
+        for (auto &file_block : blocks)  {
+            std::cout << file_block.block_size <<" " << file_block.interval <<" "<<file_block.script_before << " " << file_block.script_after  << "\n";
         }
         std::cout << "\n";
     }
     
     try {
-        transfer(config, blocks, intervals);
+        transfer(config, blocks);
     } catch (const std::system_error &e) {
         std::cerr << "system_error: " << e.what() << " " << e.code() << std::endl;
         return -1;

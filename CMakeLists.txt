@@ -14,7 +14,7 @@ find_library(BOOST_LIB NAMES boost_program_options HINTS "${BOOST_DIR}/lib" REQU
 aux_source_directory("${PROJECT_SOURCE_DIR}/src" SRC_LIST)
 
 #get all target files
-set(TARGET_LIST "${PROJECT_SOURCE_DIR}/src/client.cxx"  "${PROJECT_SOURCE_DIR}/src/msg_client.cxx" "${PROJECT_SOURCE_DIR}/src/server.cxx" "${PROJECT_SOURCE_DIR}/src/ecfexp_client.cxx" )
+set(TARGET_LIST "${PROJECT_SOURCE_DIR}/src/client.cxx"  "${PROJECT_SOURCE_DIR}/src/msg_client.cxx" "${PROJECT_SOURCE_DIR}/src/server.cxx" "${PROJECT_SOURCE_DIR}/src/ecfexp_client.cxx" "${PROJECT_SOURCE_DIR}/src/ecfexp_client2.cxx")
 list(REMOVE_ITEM SRC_LIST ${TARGET_LIST})
 
 message("${SRC_LIST}")

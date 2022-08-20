@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
     
     try {
         net::FileMsgClient client(config);
-        for (int i = 0; i < socket_num; i++) {
+        for (std::uint32_t i = 0; i < socket_num; i++) {
             auto res = client.transfer(msg_num);
             if (verbose)
                 std::cout << res.str() << "\n";

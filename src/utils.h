@@ -54,6 +54,8 @@ private:
     }
 };
 
+std::pair<bool, std::string> run_cmd(const std::string &cmd);
+
 }
 
 #endif 
