@@ -99,7 +99,7 @@ void transfer(const ECFExpClientConfig &config, const std::vector<std::uint64_t>
     //transfer data 
     double all_time = 0;
     auto buf = utils::create_buffer(config.send_buffer, true);
-    for (int i = 0; i < blocks.size(); i++) {
+    for (std::uint32_t i = 0; i < blocks.size(); i++) {
         std::this_thread::sleep_for(std::chrono::milliseconds(intervals[i]));
         auto duration = transfer_block(client_sock.get(), blocks[i], reinterpret_cast<char*>(buf.get()), config.send_buffer);
         std::cout << blocks[i] << " " << duration << "\n";
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
         //show configs 
         config.show();
         std::cout << "interval-block: ";
-        for (int i = 0; i < blocks.size(); i++) {
+        for (std::uint32_t i = 0; i < blocks.size(); i++) {
             std::cout << intervals[i] << "-" << "\n";
         }
         std::cout << "\n";
