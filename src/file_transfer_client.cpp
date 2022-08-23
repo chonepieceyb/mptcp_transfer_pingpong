@@ -44,7 +44,7 @@ TransferRes FileTransferClient::transfer(std::uint64_t kbytes) {
             //tcp
         }   
         if (!_config.bind_address.empty()) {
-            client_sock->bind(_config.bind_address, 0);
+            client_sock->bind(_config.bind_address, _config.bind_port);
         }
 
         //

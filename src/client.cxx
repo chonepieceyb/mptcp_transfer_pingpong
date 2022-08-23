@@ -28,6 +28,8 @@ int main(int argc, char** argv) {
         ("send_buffer,b", po::value<std::uint16_t>()->default_value(net::SEND_BUFFER), "send buffer size")
         ("version,V", po::value<int>()->default_value(1), "mptcp version")
         ("port,p", po::value<std::uint16_t>()->default_value(net::DEFAULT_PORT), "server's port")
+        ("bind_port,P", po::value<std::uint16_t>()->default_value(0), "client's bind port")
+
         ("address,a", po::value<std::string>()->default_value("127.0.0.1"), "server's ip address")
         ("bind_address,i", po::value<std::string>()->default_value(""), "bind address to client")
 
@@ -62,6 +64,7 @@ int main(int argc, char** argv) {
         if (vm.count("tcp")) config.use_mptcp = false;
         config.send_buffer = vm["send_buffer"].as<std::uint16_t>();
         config.port = vm["port"].as<std::uint16_t>();
+        config.bind_port = vm["bind_port"].as<std::uint16_t>();
         config.version = vm["version"].as<int>();
         if (vm.count("verbose")) {
             verbose = true;

@@ -17,12 +17,14 @@ struct ClientConfig {
     std::string address;
     std::string bind_address;
     std::uint16_t port;
+    std::uint16_t bind_port;
     int version;
 
     void show() {
         std::cout << "use_mptcp: " << use_mptcp << "\n";
         std::cout << "send_buffer(Bytes): " << send_buffer << "\n";
         std::cout << "port: " << port << "\n";
+        std::cout << "bind_port: " << bind_port << "\n";
         std::cout << "ip address: " << address << "\n";
         std::cout << "bind address: " << bind_address << "\n";
         std::cout << "mptcp version: " << version << "\n";
