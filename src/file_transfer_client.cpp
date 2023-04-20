@@ -1,60 +1,72 @@
 #include "file_transfer_client.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <iostream> 
 #include <chrono>
+#include "utils.h"
 
 namespace net {
 
 using std::chrono::high_resolution_clock;
 using std::chrono::microseconds;
 
-FileTransferClient::FileTransferClient(ClientConfig config) : _config(std::move(config)) {
-    _addr = netutils::parse_sockaddr_in(_config.address, _config.port);
-    switch(_config.mode) {
-    case TrafficMode::C_TO_S:
-        _traffic_func = netutils::build_up_traffic_func();
-        break;
-
-    case TrafficMode::S_TO_C:
-        _traffic_func = netutils::build_down_traffic_func();
-        break;
-
-    case TrafficMode::BIO:
-        _traffic_func = netutils::build_bio_traffic_func(true);
-        break;
-
-    default:
-        throw Exception("unknowen traffic mode");
-    }
+FileTransferClient::FileTransferClient(const ClientConfig &config) : _config(config) {
 }
-
+    
 TransferRes FileTransferClient::transfer(std::uint64_t kbytes) {
+    //create a new socket transfer kbytes, and close socket, each time a transfer is called , a new socket is created
     int batch = 0;
     std::string batch_data, res_data;
-    std::uint64_t sent = 0, recv = 0;
 
-    if (_config.mode != TrafficMode::S_TO_C) {
-        batch = (kbytes << 10) / _config.send_buffer;
-        auto res_size = (kbytes << 10) % _config.send_buffer;
-        batch_data = std::string(_config.send_buffer, 'a');
-        res_data = std::string(res_size, 'a');
-    }
-
-    //transfer
-    TCPSocket sock(_config.recv_buffer);
+    batch = (kbytes << 10) / _config.send_buffer;
+    auto res_size = (kbytes << 10) % _config.send_buffer;
+    batch_data = std::string(_config.send_buffer, 'a');
+    res_data = std::string(res_size, 'a');
     
-    //set tcp opts 
-    netutils::set_mptcp_enable(sock.fd(), _config.use_mptcp);
+    //std::cout << "batch: " << batch << "\n";
+    //std::cout << "res_size: " << res_size << "\n";
+    std::chrono::time_point<std::chrono::high_resolution_clock>  begin;     
+    uint64_t sent = 0;
+    { 
+        std::unique_ptr<TCPSockIn> client_sock;
+        if (_config.use_mptcp) {
+            //mptcp 
+            if (_config.version == 0) {
+                client_sock = std::unique_ptr<TCPSockIn>(dynamic_cast<TCPSockIn*>(new MPTCPSockInV0()));
+            } else if(_config.version == 1) {
+                client_sock = std::unique_ptr<TCPSockIn>(dynamic_cast<TCPSockIn*>(new MPTCPSockInV1()));
+            } else {
+                throw std::runtime_error("unkonwen mptcp version");
+            }       
+        } else {
+            client_sock = std::unique_ptr<TCPSockIn>(dynamic_cast<TCPSockIn*>(new TCPSockIn()));
+            if (_config.version == 0) {
+                //disable mptcp
+                MPTCPSockInV0::set_mptcp_enable(client_sock->view(), 0);
+            }
+            //tcp
+        }   
+        if (!_config.bind_address.empty()) {
+            client_sock->bind(_config.bind_address, _config.bind_port);
+        }
 
-    auto begin = high_resolution_clock::now();
-    sock.tcp_connect(_addr);
-    std::tie(sent, recv) = _traffic_func(sock, batch, &batch_data, &res_data);   
-    sock.tcp_close();
+        //
+        begin = high_resolution_clock::now();
+        client_sock->connect(_config.address, _config.port);
+    
+        //transfer data 
+        for (int i = 0; i < batch; i++) {
+            sent += client_sock->send(batch_data.data(), batch_data.length(), 0);
+            //std::cout << "send " << sent << "\n";
+        }
+        if (!res_data.empty()) {
+            //std::cout << "transfer res " <<res_data << "\n";
+            sent += client_sock->send(res_data.data(), res_data.length(), 0);
+            //std::cout << "res send " << sent << "\n";
+        }
+    }
     auto end = high_resolution_clock::now();
     double time_interval = std::chrono::duration_cast<microseconds>(end - begin).count();
-    return TransferRes(sent >> 10, recv >> 10, time_interval);
+
+    //std::cout << "end transfer " << "\n";
+    return TransferRes(sent >> 10, 0, time_interval);
 }
 
 }

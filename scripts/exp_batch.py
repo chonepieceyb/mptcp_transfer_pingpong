@@ -10,13 +10,13 @@ from common import *
 
 DEFAULT_XDP_SCRIPT = os.path.join(XDP_PROJECT_DIR, "src_py", "mptcp_xdp_loader.py")
 BATCH_DEFAULT_OUTPUT = DEFAULT_OUTPUT
-EXP_SCRIPT = os.path.join(SCRIPT_DIR, "exp_client_to_server.py")  #之后直接改这个值就行
+EXP_SCRIPT = os.path.join(SCRIPT_DIR, "exp_client_to_server2.py")  #之后直接改这个值就行
 
 if __name__ == '__main__': 
     parser = argparse.ArgumentParser(description="batch exp options")
     parser.add_argument("-c", "--count" , type=int, default= DEFAULT_REPEAT, help="repeat")
     parser.add_argument("-o","--output", type=str, default = BATCH_DEFAULT_OUTPUT, help="output path")
-    parser.add_argument("--xdp", type=str, default = DEFAULT_XDP_SCRIPT, help="input client script")
+    parser.add_argument("--exp", type=str, help="exp script path")
     parser.add_argument("-a","--address", type=str, default = DEFAULT_ADDRESS, help="pear ip address")
     parser.add_argument("-p", "--port", type=int, default=DEFAULT_PORT, help = "server port")
     parser.add_argument("-H", "--high_cpu", action="store_true", help = "high cpu load")
@@ -38,13 +38,13 @@ if __name__ == '__main__':
     exp_mptcp_cmd_base = "sudo python3 %s %s -c %d -a %s -p %d -o %s"%(EXP_SCRIPT, high_cpu_flags, args.count, args.address, args.port, args.output)
     exp_tcp_cmd_base = "sudo python3 %s %s -t -c %d -a %s -p %d -o %s"%(EXP_SCRIPT, high_cpu_flags, args.count, args.address, args.port, args.output)
 
-    # sudo python xdp_scripts.py -d 
-    move_xdp_cmd = "sudo python %s -d --all"%(args.xdp)
+    # sudo python3 exp_script clear
+    clear_exp_cmd = "sudo python3 %s clear"%(args.exp)
 
     #move xdp first 
-    res = os.system(move_xdp_cmd)
+    res = os.system(clear_exp_cmd)
     if (res) : 
-        print("move xdp failed %d"%res)
+        print("clear_exp_cmd failed %d"%res)
         exit(-1)
  
     #test tcp 
@@ -63,22 +63,33 @@ if __name__ == '__main__':
             print("mptcp normal exp failed %d"%res)
             exit(-1)
     
-    #attach xdp
+    #set exp 
     if args.mptcp_xdp:
-        xdp_proc = Popen(args=["sudo", "python", args.xdp, "-a", "--all"], start_new_session=True, encoding='utf-8')   #start tcp dump
-        time.sleep(20) 
+        set_exp_cmd = "sudo python3 %s"%(args.exp)
+        res = os.system(set_exp_cmd)
+        if (res) : 
+            print("set_exp_cmd failed %d"%res)
+            exit(-1)
+        '''
+                xdp_proc = Popen(args=["sudo", "python3", args.xdp, "-a", "--all"], start_new_session=True, encoding='utf-8')   #start tcp dump
+                time.sleep(20) 
 
-        try :
-            exp_mptcp_xdp_cmd = "%s %s-mptcp_xdp"%(exp_mptcp_cmd_base, args.scene)
-            res = os.system(exp_mptcp_xdp_cmd)
-            if (res):
-                print("mptcp xdp exp failed %d"%res)
-                raise RuntimeError("mptcp xdp exp failed %d"%res)
-            time.sleep(2)       
-        except Exception as e:
-            print(e)
-        finally:
-            os.killpg(xdp_proc.pid, signal.SIGKILL)
+                try :
+                    exp_mptcp_xdp_cmd = "%s %s-mptcp_xdp"%(exp_mptcp_cmd_base, args.scene)
+                    res = os.system(exp_mptcp_xdp_cmd)
+                    if (res):
+                        print("mptcp xdp exp failed %d"%res)
+                        raise RuntimeError("mptcp xdp exp failed %d"%res)
+                    time.sleep(2)       
+                except Exception as e:
+                    print(e)
+                finally:
+                    os.killpg(xdp_proc.pid, signal.SIGKILL)
+        '''
+        exp_mptcp_xdp_cmd = "%s %s-mptcp_xdp"%(exp_mptcp_cmd_base, args.scene)
+        res = os.system(exp_mptcp_xdp_cmd)
+        if (res):
+            print("mptcp xdp exp failed %d"%res)
 
     # sudo python xdp_scripts.py -d 
-    os.system(move_xdp_cmd)
+    os.system(clear_exp_cmd)

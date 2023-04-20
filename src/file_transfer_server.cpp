@@ -1,71 +1,76 @@
 #include "file_transfer_server.h"
-#include <iostream>
 #include <chrono>
+#include "utils.h"
+#include <iostream>
+
+extern "C" {
+
 #include <unistd.h>
+
+}
 
 namespace net {
 
+using namespace sock;
 using std::chrono::high_resolution_clock;
 using std::chrono::microseconds;
 
-FileTransferServer::FileTransferServer(ServerConfig config):_config(std::move(config)) {
-    auto server_addr = netutils::parse_sockaddr_in(_config.port);
-    _sock = std::unique_ptr<TCPSocket>(new TCPSocket(1));
-
-    //set tcp opt 
-    netutils::set_mptcp_enable(_sock->fd(), static_cast<int>(_config.use_mptcp));
-    //server should set reuse 
-    netutils::set_tcp_reuse_addr(_sock->fd(), 1);
-    
-    switch(_config.mode) {
-    case TrafficMode::C_TO_S:
-        _traffic_func = netutils::build_down_traffic_func();
-        break;
-
-    case TrafficMode::S_TO_C:
-        _traffic_func = netutils::build_up_traffic_func();
-        break;
-
-    case TrafficMode::BIO:
-        _traffic_func = netutils::build_bio_traffic_func(false);
-        break;
-
-    default:
-        throw Exception("unknowen traffic mode");
+FileTransferServer::FileTransferServer(const ServerConfig &config):_config(config) {
+    if (_config.use_mptcp) {
+        //mptcp 
+        if (_config.version == 0) {
+            _sock = std::unique_ptr<TCPSockIn>(dynamic_cast<TCPSockIn*>(new MPTCPSockInV0()));
+        } else if(_config.version == 1) {
+            _sock = std::unique_ptr<TCPSockIn>(dynamic_cast<TCPSockIn*>(new MPTCPSockInV1()));
+        } else {
+            throw std::runtime_error("unkonwen mptcp version");
+        }
+    } else {
+        _sock = std::unique_ptr<TCPSockIn>(dynamic_cast<TCPSockIn*>(new TCPSockIn()));
+        if (_config.version == 0) {
+            //disable mptcp
+            MPTCPSockInV0::set_mptcp_enable(_sock->view(), 0);
+        }
+        //tcp
     }
-
+    
+    if (_sock == nullptr) {
+        throw std::runtime_error("file transfer server create socket failed");
+    }
+    std::cout << "mptcp sock create success\n";
+    //server should set reuse 
+    _sock->set_reuse_addr(1);
+    
     //bind
-    _sock->tcp_bind(server_addr);
+    _sock->bind(_config.bind_address, _config.port);
 }
 
-void FileTransferServer::listen_and_transfer(std::uint64_t kbytes) {
-    //listen 1 
-    int batch = 0;
-    std::string batch_data, res_data;
-    std::uint64_t sent = 0, recv = 0;
+void FileTransferServer::listen_and_transfer() {
+    auto recv_buf = utils::create_buffer(_config.recv_buffer, true);
+    _sock->listen(3);    
+    utils::TermSignal::regist();
+    while (true) {
+        try {
+            SockAddrIn client_addr;
+            auto client_sock = Socket<SockAddrIn>(_sock->accept(client_addr));
 
-    if (_config.mode == TrafficMode::S_TO_C) {
-        batch = (kbytes << 10) / _config.send_buffer;
-        auto res_size = (kbytes << 10) % _config.send_buffer;
-        batch_data = std::string(_config.send_buffer, 'a');
-        res_data = std::string(res_size, 'a');
+            // new connection
+            uint64_t recv = 0;
+            while (true) {
+                auto recv_this_time = client_sock.recv(reinterpret_cast<char*>(recv_buf.get()), _config.recv_buffer, 0);
+                if (recv_this_time == 0) {
+                    break;
+                }
+                recv += recv_this_time;
+            }       
+            //std::cout << "recv : " << recv << "\n"; 
+        } catch (const errors::KeyboardInterrupt &e) {
+            break;
+        } catch (std::system_error &e) {
+            std::cout << "system error: " << e.what() << " " << e.code()<< std::endl;
+        }
     }
 
-    TCPSocket client_sock(-1, _config.recv_buffer);
-
-    netutils::TermSignal ts;
-    while (ts.ok()) {
-        _sock->tcp_listen();
-        //accept
-        sockaddr_in client_addr;
-        int client_fd; 
-        std::tie(client_addr, client_fd) = _sock->tcp_accept();
-        client_sock.reset(client_fd);  //wapper
-        //print client info 
-        //std::cout << "accept: " << inet_ntoa(client_addr.sin_addr) << ':' << ntohs(client_addr.sin_port) << '\n';
-        std::tie(sent, recv) = _traffic_func(client_sock, batch, &batch_data, &res_data);   
-        client_sock.tcp_close();
-    }
 }
 
 }
